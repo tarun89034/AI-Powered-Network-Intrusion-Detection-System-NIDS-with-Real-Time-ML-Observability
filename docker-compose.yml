@@ -1,0 +1,57 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: nids-backend
+    command: sh -c "python train_models.py --samples 3000 && uvicorn nids_engine.backend.api:app --host 0.0.0.0 --port 8000"
+    environment:
+      - NIDS_DB_PATH=/app/data/nids.db
+    volumes:
+      - nids_data:/app/data
+    ports:
+      - "8000:8000"
+    networks:
+      - nids_net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  engine:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: nids-engine
+    command: python main_engine.py -r /app/test_dpi.pcap --flow-timeout 5 --api-url http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - nids_net
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    container_name: nids-dashboard
+    environment:
+      - VITE_API_URL=http://localhost:8000/api
+      - VITE_WS_URL=ws://localhost:8000/ws/events
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - nids_net
+
+volumes:
+  nids_data:
+
+networks:
+  nids_net:
+    driver: bridge

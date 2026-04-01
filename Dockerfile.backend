@@ -1,0 +1,15 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY nids_engine ./nids_engine
+COPY main_engine.py ./
+COPY train_models.py ./
+COPY test_dpi.pcap ./
+
+EXPOSE 8000
+
+CMD ["uvicorn", "nids_engine.backend.api:app", "--host", "0.0.0.0", "--port", "8000"]

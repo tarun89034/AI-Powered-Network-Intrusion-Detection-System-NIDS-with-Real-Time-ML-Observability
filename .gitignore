@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv
+venv/
+ENV/
+
+# Node / React
+dashboard/node_modules/
+dashboard/dist/
+.DS_Store
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Project Specific
+logs/
+nids_engine/storage/nids.db
+nids_engine/ml/models/*.pkl
+*.pcap
+*.exe
+dpi_engine
+
+# IDE
+.vscode/
+.idea/
+.pytest_cache/
