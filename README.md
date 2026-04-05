@@ -11,6 +11,14 @@ A production-grade, Python-first Network Intrusion Detection System (NIDS) offer
 - **WebSockets & Visualizations**: Sub-100ms latency live traffic visualization via React, Recharts, and WebSockets.
 - **Complete API Layer**: FastAPI-enabled architecture exposing REST endpoints and WebSocket events.
 
+## Dashboard Screenshots
+
+![AI-NIDS Dashboard Overview](assets/dashboard_overview.png)
+*Figure 1: The AI-NIDS live observability dashboard showing real-time statistics. Includes the privacy mode indicator, total flows analyzed, active connections, anonymized top source IPs, and a live tracking chart for traffic throughput.*
+
+![AI-NIDS Dashboard Alerts and Flow](assets/dashboard_alerts.png)
+*Figure 2: Detailed view of the dashboard displaying the protocol distribution split (TCP vs UDP) alongside the real-time security alerts table, flagging high-severity threats immediately as they occur.*
+
 ## Architecture
 
 ```text
