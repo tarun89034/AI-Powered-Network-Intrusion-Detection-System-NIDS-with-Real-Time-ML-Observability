@@ -6,6 +6,7 @@ from typing import Any, Dict, List
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from nids_engine.privacy import scrub
 from nids_engine.storage.db import FlowDatabase
 from nids_engine.ml.model_manager import ModelManager
 
@@ -77,23 +78,23 @@ def read_root():
 @app.get("/api/stats")
 def get_stats():
     """Returns general NIDS statistics."""
-    return db.get_stats()
+    return scrub(db.get_stats())
 
 
 @app.get("/stats")
 def get_stats_compat():
     """Compatibility endpoint for /stats requirement."""
-    return db.get_stats()
+    return scrub(db.get_stats())
 
 @app.get("/api/alerts")
 def get_alerts(limit: int = 50):
     """Returns recent anomaly alerts."""
-    return db.get_alerts(limit)
+    return scrub(db.get_alerts(limit))
 
 @app.get("/api/flows")
 def get_flows(limit: int = 100):
     """Returns recent network flows."""
-    return db.get_recent_flows(limit)
+    return scrub(db.get_recent_flows(limit))
 
 
 @app.post("/api/predict", response_model=PredictResponse)
@@ -118,17 +119,19 @@ async def ingest_flow(flow: IngestFlowRequest):
     db.insert_flow(flow_data, is_anomaly, attack_type)
 
     await ws_manager.broadcast(
-        {
-            "event": "flow_processed",
-            "flow": {
-                **flow_data,
-                "is_anomaly": is_anomaly,
-                "attack_type": attack_type,
-            },
-            "stats": db.get_stats(),
-            "alerts": db.get_alerts(limit=10),
-            "flows": db.get_recent_flows(limit=20),
-        }
+        scrub(
+            {
+                "event": "flow_processed",
+                "flow": {
+                    **flow_data,
+                    "is_anomaly": is_anomaly,
+                    "attack_type": attack_type,
+                },
+                "stats": db.get_stats(),
+                "alerts": db.get_alerts(limit=10),
+                "flows": db.get_recent_flows(limit=20),
+            }
+        )
     )
 
     return {
@@ -144,12 +147,14 @@ async def websocket_events(websocket: WebSocket):
     await ws_manager.connect(websocket)
     try:
         await websocket.send_json(
-            {
-                "event": "snapshot",
-                "stats": db.get_stats(),
-                "alerts": db.get_alerts(limit=10),
-                "flows": db.get_recent_flows(limit=20),
-            }
+            scrub(
+                {
+                    "event": "snapshot",
+                    "stats": db.get_stats(),
+                    "alerts": db.get_alerts(limit=10),
+                    "flows": db.get_recent_flows(limit=20),
+                }
+            )
         )
         while True:
             await websocket.receive_text()

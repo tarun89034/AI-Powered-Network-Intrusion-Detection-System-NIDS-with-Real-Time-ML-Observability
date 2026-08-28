@@ -7,7 +7,7 @@ A production-grade, Python-first Network Intrusion Detection System (NIDS) offer
 - **True Flow-Based Detection**: Aggregates network traffic into bidirectional flows and natively extracts 19 CICIDS-aligned statistical features (duration, packet/byte rates, packet length stats, flags).
 - **Automated Kaggle Integration**: Memory-safe automated downloading, loading, and dynamic training on the 1.2GB+ Kaggle CICIDS2017 network traffic dataset.
 - **Machine Learning Integration**: Utilizes Scikit-learn Isolation Forests for zero-day anomaly detection and Random Forests for supervised attack classification.
-- **Privacy-First Dashboard**: Cryptographic IP anonymization masks sensitive PII during public demonstrations, enabling secure portfolio showcases.
+- **Privacy-First by Default**: Server-side HMAC-SHA256 pseudonymization rewrites every IP address before it leaves the API, so no raw address crosses the WebSocket, the REST layer, or the browser. See [Privacy Mode](#privacy-mode).
 - **WebSockets & Visualizations**: Sub-100ms latency live traffic visualization via React, Recharts, and WebSockets.
 - **Complete API Layer**: FastAPI-enabled architecture exposing REST endpoints and WebSocket events.
 
@@ -39,7 +39,7 @@ packet_analyzer/
 
 - **Architected** a real-time AI-NIDS pipeline in Python, integrating Scikit-learn for anomaly detection and attack classification, achieving 99.9% classification accuracy on 250,000+ records of real-world CICIDS2017 network traffic data.
 - **Engineered** a high-performance flow-based feature extractor that multi-threaded the parsing of raw packets into bidirectional flows, implementing a memory-safe ingestion layer that handled 1.2GB+ datasets while maintaining peak system stability.
-- **Developed** a modern security observability dashboard using React and WebSockets for sub-100ms latency live traffic visualization, implementing cryptographic IP anonymization to protect sensitive PII across 5+ distinct real-time visualization modules.
+- **Developed** a modern security observability dashboard using React and WebSockets for sub-100ms latency live traffic visualization, enforcing HMAC-SHA256 IP pseudonymization at the API boundary so PII never reaches the client across 5+ distinct real-time visualization modules.
 
 ## Top 5 Tech Stack
 
@@ -131,3 +131,25 @@ This single command spins up:
 
 **Listen to Real-Time Websockets**
 - `ws://<host>:8000/ws/events` (Provides simultaneous alerting pipelines directly into Recharts!)
+
+## Privacy Mode
+
+Every API response and WebSocket frame passes through `nids_engine/privacy.py`, which
+replaces IP addresses with a salted HMAC-SHA256 pseudonym such as `Anon-3f9c2a`. This
+covers bare `src_ip`/`dst_ip` fields, the `ip` entries in the top-talker stats, and the
+addresses embedded inside `flow_id`. The mapping is one-way and stable, so the dashboard
+can still correlate a talker over time without ever receiving the address itself.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `NIDS_PRIVACY_MODE` | `on` | Set to `off` to serve raw addresses to authorized operators. |
+| `NIDS_ANON_SALT` | *(random per process)* | HMAC salt. Set it to keep pseudonyms stable across restarts. |
+
+Two caveats worth knowing before you point this at a real network:
+
+- **Raw addresses are still stored at rest.** The SQLite database and `logs/nids.log`
+  keep real IPs so an analyst can pivot on an incident. Scrubbing happens on the way
+  out, not on the way in — treat the database file and log directory as sensitive.
+- **Pseudonyms are not anonymity.** The address space is small enough that a party who
+  knows the salt, or who can replay candidate addresses through the same HMAC, can
+  reverse the mapping. Keep `NIDS_ANON_SALT` secret and rotate it per deployment.

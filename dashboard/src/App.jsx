@@ -6,17 +6,10 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://127.0.0.1:8000/ws/events';
 
-// Privacy function to hash real IPs for the demo
-const hashIp = (ip) => {
-  if (!ip) return "Unknown";
-  let hash = 0;
-  for (let i = 0; i < ip.length; i++) {
-    hash = (hash << 5) - hash + ip.charCodeAt(i);
-    hash |= 0; 
-  }
-  const hexHash = Math.abs(hash).toString(16).padStart(6, '0').substring(0, 6);
-  return `Anon-${hexHash}`;
-};
+// Addresses arrive already pseudonymized: the backend scrubs them before they
+// reach the WebSocket or the REST API, so the browser never receives a raw IP.
+// Hashing here as well would only re-hash an already-anonymous label.
+const formatIp = (ip) => ip || "Unknown";
 
 const StatCard = ({ title, value, icon: Icon, colorClass, animationDelay }) => (
   <motion.div
@@ -134,7 +127,7 @@ export default function App() {
               <ShieldAlert className="h-5 w-5 text-yellow-400" />
             </div>
             <div className="ml-3 text-sm text-yellow-700">
-              <span className="font-bold">Privacy Mode Active:</span> To protect sensitive networking information during demonstrations, all IP addresses displayed on this dashboard are dynamically anonymized. The underlying AI engine continues to perform all packet analysis and threat detection using the real-time, untampered data.
+              <span className="font-bold">Privacy Mode Active:</span> IP addresses are pseudonymized by the backend before they are sent to this dashboard, so no raw address crosses the network or reaches your browser. The engine continues to perform all packet analysis and threat detection on the real, untampered traffic.
             </div>
           </div>
         </div>
@@ -183,7 +176,7 @@ export default function App() {
               topSourceIps.map((item) => (
                 <div key={item.ip} className="rounded-lg border border-gray-100 p-3 bg-gray-50">
                   <div className="text-xs text-gray-500">Source</div>
-                  <div className="font-medium text-gray-900 truncate">{hashIp(item.ip)}</div>
+                  <div className="font-medium text-gray-900 truncate">{formatIp(item.ip)}</div>
                   <div className="text-xs text-gray-500 mt-1">Flows: {item.count}</div>
                 </div>
               ))
@@ -259,8 +252,8 @@ export default function App() {
                       key={alert.id} className="hover:bg-gray-50 transition-colors"
                     >
                       <td className="px-6 py-4 text-gray-500">{new Date(alert.timestamp * 1000).toLocaleTimeString()}</td>
-                      <td className="px-6 py-4 font-medium text-gray-900">{hashIp(alert.src_ip)}</td>
-                      <td className="px-6 py-4 text-gray-500">{hashIp(alert.dst_ip)}</td>
+                      <td className="px-6 py-4 font-medium text-gray-900">{formatIp(alert.src_ip)}</td>
+                      <td className="px-6 py-4 text-gray-500">{formatIp(alert.dst_ip)}</td>
                       <td className="px-6 py-4">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                           {alert.attack_type}
